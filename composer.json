@@ -1,0 +1,24 @@
+{
+    "name": "sebasbit/load-data",
+    "description": "Insert data into a database table from a csv file.",
+    "type": "project",
+    "authors": [
+        {
+            "name": "sebasbit",
+            "email": "sebastian.torres0426@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Sebasbit\\LoadData\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Sebasbit\\LoadData\\Tests\\": "tests"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    }
+}
