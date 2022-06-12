@@ -4,6 +4,13 @@ namespace Sebasbit\LoadData\Csv;
 
 use Iterator;
 
+use function array_merge;
+use function fclose;
+use function fgetcsv;
+use function file_exists;
+use function fopen;
+use function rewind;
+
 class CsvReader implements Iterator
 {
     const READ_MODE = 'r';
@@ -85,6 +92,26 @@ class CsvReader implements Iterator
         return $this->row;
     }
 
+    public function reset(): void
+    {
+        rewind($this->pointer);
+
+        $this->headers = null;
+        $this->row = null;
+        $this->rownum = 0;
+        $this->endOfFile = false;
+
+        if ($this->options['headers'] === true) {
+            $headers = $this->nextRow();
+
+            if (!$headers) {
+                throw new CsvReaderException('The headers cannot be read');
+            }
+
+            $this->headers = $headers;
+        }
+    }
+
     public function nextRow(): ?array
     {
         $data = fgetcsv(
@@ -106,27 +133,8 @@ class CsvReader implements Iterator
         return $data;
     }
 
-    public function reset(): void
-    {
-        rewind($this->pointer);
+    // Iterator methods implementation
 
-        $this->headers = null;
-        $this->row = null;
-        $this->rownum = 0;
-        $this->endOfFile = false;
-
-        if ($this->options['headers'] === true) {
-            $headers = $this->nextRow();
-
-            if (!$headers) {
-                throw new CsvReaderException('The headers cannot be read');
-            }
-
-            $this->headers = $headers;
-        }
-    }
-
-    // Iterator implementation
     public function current()
     {
         return $this->row();
