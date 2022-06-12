@@ -36,7 +36,7 @@ class CsvReaderTest extends TestCase
         $csvReader = new CsvReader($file);
         $this->assertEquals($file, $csvReader->origin());
         $this->assertNull($csvReader->headers());
-        $this->assertNull($csvReader->currentRow());
+        $this->assertNull($csvReader->row());
     }
 
     public function test_fail_if_file_does_not_exists()

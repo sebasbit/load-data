@@ -6,12 +6,11 @@ use Iterator;
 
 class CsvReader implements Iterator
 {
+    const READ_MODE = 'r';
+
     private string $origin;
 
-    /** @var resource */
-    private $pointer;
-
-    private array $options = [
+    private array $defaultOptions = [
         'headers' => false,
         'length' => 0,
         'delimiter' => ',',
@@ -19,13 +18,20 @@ class CsvReader implements Iterator
         'escape' => '\\',
     ];
 
-    private ?array $headers = null;
+    private array $options;
 
-    private ?array $currentRow = null;
+    /**
+     * @var resource
+     */
+    private $pointer;
 
-    private int $currentRownum = 0;
+    private ?array $headers;
 
-    private bool $endReached = false;
+    private ?array $row;
+
+    private int $rownum;
+
+    private bool $endOfFile;
 
     public function __construct(string $origin, array $options = [])
     {
@@ -33,7 +39,7 @@ class CsvReader implements Iterator
             throw new CsvReaderException("The file '$origin' does not exists");
         }
 
-        $pointer = @fopen($origin, 'r');
+        $pointer = @fopen($origin, self::READ_MODE);
 
         if (!$pointer) {
             throw new CsvReaderException("The file '$origin' cannot be opened");
@@ -41,17 +47,10 @@ class CsvReader implements Iterator
 
         $this->origin = $origin;
         $this->pointer = $pointer;
-        $this->options = array_merge($this->options, $options);
+        $this->options = array_merge($this->defaultOptions, $options);
 
-        if ($this->options['headers'] === true) {
-            $headers = $this->nextRow();
-
-            if (!$headers) {
-                throw new CsvReaderException('The headers cannot be read');
-            }
-
-            $this->headers = $headers;
-        }
+        // Set default values
+        $this->reset();
     }
 
     public function __destruct()
@@ -66,6 +65,26 @@ class CsvReader implements Iterator
         return $this->origin;
     }
 
+    public function rownum(): int
+    {
+        return $this->rownum;
+    }
+
+    public function endOfFile(): bool
+    {
+        return $this->endOfFile;
+    }
+
+    public function headers(): ?array
+    {
+        return $this->headers;
+    }
+
+    public function row(): ?array
+    {
+        return $this->row;
+    }
+
     public function nextRow(): ?array
     {
         $data = fgetcsv(
@@ -77,12 +96,12 @@ class CsvReader implements Iterator
         );
 
         if (!$data) {
-            $this->endReached = true;
+            $this->endOfFile = true;
             return null;
         }
 
-        $this->currentRownum++;
-        $this->currentRow = $data;
+        $this->rownum++;
+        $this->row = $data;
 
         return $data;
     }
@@ -91,10 +110,10 @@ class CsvReader implements Iterator
     {
         rewind($this->pointer);
 
-        $this->endReached = false;
         $this->headers = null;
-        $this->currentRow = null;
-        $this->currentRownum = 0;
+        $this->row = null;
+        $this->rownum = 0;
+        $this->endOfFile = false;
 
         if ($this->options['headers'] === true) {
             $headers = $this->nextRow();
@@ -107,35 +126,15 @@ class CsvReader implements Iterator
         }
     }
 
-    public function currentRownum(): int
-    {
-        return $this->currentRownum;
-    }
-
-    public function endReached(): bool
-    {
-        return $this->endReached;
-    }
-
-    public function headers(): ?array
-    {
-        return $this->headers;
-    }
-
-    public function currentRow(): ?array
-    {
-        return $this->currentRow;
-    }
-
     // Iterator implementation
     public function current()
     {
-        return $this->currentRow();
+        return $this->row();
     }
 
     public function key()
     {
-        return $this->currentRownum();
+        return $this->rownum();
     }
 
     public function next(): void
@@ -146,11 +145,13 @@ class CsvReader implements Iterator
     public function rewind(): void
     {
         $this->reset();
-        $this->nextRow(); // set default value for the first iteration
+
+        // Set default value for the first iteration
+        $this->nextRow();
     }
 
     public function valid(): bool
     {
-        return ($this->endReached() === false);
+        return $this->endOfFile() === false;
     }
 }
