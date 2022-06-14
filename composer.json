@@ -9,6 +9,7 @@
         }
     ],
     "autoload": {
+        "files": ["src/functions.php"],
         "psr-4": {
             "Sebasbit\\LoadData\\": "src"
         }
